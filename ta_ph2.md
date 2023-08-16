@@ -3,33 +3,144 @@ Relationship between Titratable Acidity, pH, and Taste Rating
 Graciela Ferderer
 2023-08-16
 
-## R Markdown
+## Evaluation of Titratable Acidity as a Quality Metric
 
-This is an R Markdown document. Markdown is a simple formatting syntax
-for authoring HTML, PDF, and MS Word documents. For more details on
-using R Markdown see <http://rmarkdown.rstudio.com>.
+Titratable Acidty (TA) is the approximation of the amount of weak
+organic acids in a solution. Kombucha produces a variety of these acids,
+primarily acetic acid. In effort to improve our quality metrics we seek
+evidence to determine TA as a good indicator of the target flavor
+profile.
 
-When you click the **Knit** button a document will be generated that
-includes both content as well as the output of any embedded R code
-chunks within the document. You can embed an R code chunk like this:
+This analysis investigates the hypothesis that high TA is a good
+indicator of a high Taste Rating.
 
-``` r
-summary(cars)
-```
+## Data Sources
 
-    ##      speed           dist       
-    ##  Min.   : 4.0   Min.   :  2.00  
-    ##  1st Qu.:12.0   1st Qu.: 26.00  
-    ##  Median :15.0   Median : 36.00  
-    ##  Mean   :15.4   Mean   : 42.98  
-    ##  3rd Qu.:19.0   3rd Qu.: 56.00  
-    ##  Max.   :25.0   Max.   :120.00
+Data was sourced from our Production Brewing Database. This database is
+maintained by the Quality Manager and is updated weekly from
+measurements recorded in our lab. Data used was collected from January
+to July 2023.
 
-## Including Plots
+    ##      Package LibPath Version Priority Depends Imports LinkingTo Suggests
+    ##      Enhances License License_is_FOSS License_restricts_use OS_type Archs
+    ##      MD5sum NeedsCompilation Built
 
-You can also embed plots, for example:
+    ## package 'ggpubr' successfully unpacked and MD5 sums checked
 
-![](ta_ph2_files/figure-gfm/pressure-1.png)<!-- -->
+## Data Cleaning Documentation in Google Sheets
 
-Note that the `echo = FALSE` parameter was added to the code chunk to
-prevent printing of the R code that generated the plot.
+1.  **Remove duplicates:** To ensure data integrity, remove duplicate
+    entries from the dataset. Navigate to “Data” \> “Data Clean up” \>
+    “Remove Duplicates”.
+
+2.  **Delete extraneous columns:** Remove any unnecessary columns, such
+    as helper columns or target values, that are not relevant to the
+    analysis.
+
+3.  **Delete extraneous blank cells at the bottom:** Remove any empty
+    rows at the bottom of the dataset that do not contain any useful
+    information.
+
+4.  **Format columns into corresponding integer type:** Select the
+    relevant columns and format them as integers to ensure consistent
+    data types. To do this, select the whole column, go to “Format” \>
+    “Select Data Type”.
+
+5.  **Filter out null values:** Remove rows with null or missing values
+    from the dataset to maintain data quality. Use the “Data” \> “Add
+    Filter” option to filter out null values.
+
+6.  **Split helper columns and extract starter birth date:** If there
+    are helper columns that contain additional information, split those
+    columns and extract the starter birth date using an appropriate
+    technique.
+
+7.  **Duplicate Starter Column:** Create a duplicate of the starter
+    column for further modifications.
+
+8.  **Add two columns to the right of the duplicated column:** Insert
+    two new columns next to the duplicated starter column for additional
+    data processing.
+
+9.  **Split text to columns using the period separator:** Use the “Data”
+    \> “Split Text to Columns” function to split the data in the
+    duplicated column into separate columns based on the period
+    separator. This will separate the data into multiple columns.
+
+10. **Label subsequent columns:** Assign appropriate labels to the newly
+    created columns, such as “Creation Date” and “Parent Starter”, to
+    indicate the information they represent.
+
+11. **Delete duplicate starter column:** Remove the duplicated starter
+    column now that the required information has been extracted and
+    processed.
+
+## Summary of Analysis in R
+
+1.  **Structure of the Data Frame:** The str() function was used to view
+    the structure of the data frame. It provides information about the
+    variables and their data types in the “brew_data” data frame. This
+    step helps in identifying any data types that may need to be
+    converted for further analysis.
+
+2.  **Conversion of Data Type:** The data type of the
+    “Final.Titratable.Acidity” column was converted using the
+    as.numeric() function. The column was reassigned the converted
+    numeric values using the assignment operator (\<-). This conversion
+    ensures that the “Final.Titratable.Acidity” column is treated as
+    numeric data for subsequent analysis.
+
+3.  **Generation of Scatter Plots:** Scatter plots with linear trend
+    lines and the Spearman correlation coefficient were generated using
+    the ggplot() function from the ggplot2 package. The geom_point()
+    function was used to add the scatter plot points to the plot, while
+    the geom_smooth(method = lm) function added the linear trend line.
+    The stat_cor(method = “spearman”) function was utilized to display
+    the Spearman correlation coefficient label on the plot.
+
+By examining the structure of the data frame, converting the data type
+of the “Final.Titratable.Acidity” column to numeric, and generating
+scatter plots with linear trend lines and the Spearman correlation
+coefficient, the analysis ensures proper understanding of the data and
+enables further exploration of the relationships between variables.
+
+## Titratable Acidity and Taste Rating have a Moderate Correlation
+
+![](ta_ph2_files/figure-gfm/TA%20v%20Taste-1.png)<!-- -->
+
+The p value \<1% indicates these results are statistically significant.
+The R value of 0.56 indicates these is a moderate correlation between
+increase in TA and taste rating.
+
+## pH and Taste Rating have a Moderate Correlation
+
+![](ta_ph2_files/figure-gfm/Final%20pH%20v%20Taste-1.png)<!-- -->
+
+The p value \<1% indicates these results are statistically significant.
+The R value of -0.49 indicates these is a moderate correlation between
+decrease in pH and taste rating.
+
+## Titratable Acidity and pH have a Strong Correlation
+
+![](ta_ph2_files/figure-gfm/Taste%20v%20pH-1.png)<!-- -->
+
+The p value \<1% indicates these results are statistically significant.
+The R value of -0.72 indicates these is a moderate correlation between
+decrease in pH and increase in TA.
+
+## Discusion
+
+pH and Titratable Acidity (TA) both have a moderate correlation with
+Taste Rating. In comparing R Values TA and Taste Rating are more
+strongly correlated than pH and Taste Rating by 14%. An additional
+factor is the high degree of precision needed to measure TA. This raises
+the possibility that with a more precise data set there may be a
+stronger correlation than presents in the current analysis.
+
+## Conclusion
+
+TA and pH are both valuable quality metrics. TA has a stronger
+correlation with our Taste Rating and therefore may be a slightly better
+indicator than pH. Future investigation into the correlation between
+measures of Starter TA and Taste Rating of final product are another
+potential application of this metric.
