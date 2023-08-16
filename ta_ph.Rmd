@@ -1,0 +1,62 @@
+---
+title: "ta_ph"
+output: html_document
+date: "2023-07-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+##Evaluation of Titratable Acidity as a Quality Metric
+Titratable Acidty (TA) is the approximation of the amount of weak organic acids in a solution. Kombucha produces a variety of these acids, primarily acetic acid. In effort to improve our quality metrics we are seeking evidence to determine whether TA is a good indicator of the flavor profile we seek. A variety of sources claim TA is a better predictor of sourness than pH, generally in production we are working towards a product with a consistent sour fermented flavor.
+This analysis seeks to investigate the hypothesis that high TA is a good indicator of a high Taste Rating. 
+##Set up Parameters
+```{r library calls}
+
+installed.packages("ggplot2")
+library(ggplot2)
+
+options(repos=c(CRAN="https://cloud.r-project.org/"))
+install.packages("ggpubr")
+library(ggpubr)
+
+brew_data <- read.csv("C:\\Users\\HMKom\\Downloads\\Production_Brewing_Data - Cleaned Production Brewing Data.csv", header=TRUE, stringsAsFactors=FALSE) #loading brew_data
+
+brew_data$Final.Titratable.Acidity <- as.numeric(brew_data$Final.Titratable.Acidity) #converting the data type of column Final.Titratable.Acidity
+
+```
+
+## Titratable Acidity and Taste Rating have a Moderate Correlation
+The p value <1% indicates these results are statistically significant. The R value of 0.56 indicates these is a moderate correlation between increase in TA and taste rating. 
+```{r TA v Taste, echo=FALSE} 
+#Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#Relationship between Titratable Acidity and Taste Rating
+ggplot(brew_data, aes(x=Final.Titratable.Acidity, y=Taste.Rating.out.of.10))+
+  geom_point()+
+  geom_smooth(method = lm )+ #adds linear trend line
+  stat_cor(method = "spearman", label.x = 4, label.y = 6.5) #adds spearman coefficient
+```
+## pH and Taste Rating have a Moderate Correlation
+The p value <1% indicates these results are statistically significant. The R value of -0.49 indicates these is a moderate correlation between decrease in pH and taste rating.
+```{r TA v Taste, echo=FALSE} 
+ggplot(brew_data, aes(x=Final.pH, y=Taste.Rating.out.of.10))+
+  geom_point()+
+  geom_smooth(method = lm )+ #adds linear trend line
+  stat_cor(method = "spearman", label.x = 2.9, label.y = 6) #adds spearman coefficient
+```
+
+## Titratable Acidity and Taste Rating have a Strong Correlation
+The p value <1% indicates these results are statistically significant. The R value of -0.72 indicates these is a moderate correlation between decrease in pH and increase in TA.
+```{r TA v Taste, echo=FALSE}
+#Relationship between Final pH and Titratable Acidity
+ggplot(brew_data, aes(x=Final.Titratable.Acidity, y=Final.pH))+
+  geom_point()+
+  geom_smooth(method = lm )+ #adds linear trend line
+  stat_cor(method = "spearman", label.x = 2, label.y = 3) #adds spearman coefficient
+```
+
+## Discusion 
+pH and Titratable Acidity (TA) both have a moderate correlation with Taste Rating. By R Value, which determines the degree to which two variables are correlated, TA and Taste Rating are more strongly correlated than pH and Taste Rating by 14%. Another factor in this is the margin of error in measuring TA, while this specific value remains uncalculated the degree of precision needed to measure TA is much greater than that of pH which uses a simple probe.This raises the possibility that with are larger data set there may be a stronger correlation than presents in the current analysis.
+
+## Conclusion
+TA and pH are both valuable quality metrics. TA has a slightly stronger correlation with our Taste Rating and therefore may be a slightly better indicator than pH. Future investigation into the correlation between measures of Starter TA and Taste Rating of final product would be another potential application of this metric. 
