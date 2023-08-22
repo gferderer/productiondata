@@ -35,17 +35,40 @@ ui <- dashboardPage(
   )
 )
 
-# Define a function to create the scaled boxplot
-create_scaled_boxplot <- function(data) {
+# Define a function to create the scaled boxplot with dynamic formatting
+create_scaled_boxplot <- function(data, num_observations) {
+  # Define default aesthetics and settings
+  aesthetics <- list(
+    y = scale(Taste.Rating.out.of.10),  # Default y-aesthetic
+    fill = "Taste Rating",  # Default fill color
+    color = "Taste Rating",  # Default point color
+    title = "Combined Scaled Boxplots of Taste Rating"
+  )
+  
+  # Adjust aesthetics and settings based on the number of observations
+  if (num_observations < 50) {
+    aesthetics$color <- "Taste Rating"
+    aesthetics$title <- "Combined Scaled Boxplots of Taste Rating (Small Sample)"
+  } else if (num_observations < 100) {
+    aesthetics$y <- scale(Taste.Rating.out.of.10, limits = c(-2, 2))
+    aesthetics$fill <- "Taste Rating"
+    aesthetics$color <- "Taste Rating"
+    aesthetics$title <- "Combined Scaled Boxplots of Taste Rating (Medium Sample)"
+  } else {
+    aesthetics$y <- scale(Taste.Rating.out.of.10, limits = c(-3, 3))
+    aesthetics$fill <- "Taste Rating"
+    aesthetics$color <- "Taste Rating"
+    aesthetics$title <- "Combined Scaled Boxplots of Taste Rating (Large Sample)"
+  }
+  
+  # Create the ggplot chart with dynamic formatting
   ggplot(data, aes(x = Starter)) +
-    geom_boxplot(aes(y = scale(Taste.Rating.out.of.10), fill = "Taste Rating"), width = 0.5) +
-    geom_point(aes(y = scale(Taste.Rating.out.of.10), color = "Taste Rating"), position = position_jitterdodge(jitter.width = 0.01), size = 3) +
-    geom_boxplot(aes(y = scale(Starter.ABV), fill = "Starter ABV"), width = 0.5) +
-    geom_point(aes(y = scale(Starter.ABV), color = "Starter ABV"), position = position_jitterdodge(jitter.width = 0.01), size = 3) +
+    geom_boxplot(aes(y = aesthetics$y, fill = aesthetics$fill), width = 0.5) +
+    geom_point(aes(y = aesthetics$y, color = aesthetics$color), position = position_jitterdodge(jitter.width = 0.01), size = 3) +
     labs(
       x = "Starter",
       y = "Rescaled Values",
-      title = "Combined Scaled Boxplots of Taste Rating and Starter ABV"
+      title = aesthetics$title
     ) +
     theme_minimal() +
     scale_fill_manual(
@@ -68,7 +91,8 @@ server <- function(input, output) {
   
   # Render the plot using ggplotly
   output$combined_plot <- renderPlotly({
-    create_scaled_boxplot(filtered_data())
+    num_observations <- nrow(filtered_data())
+    create_scaled_boxplot(filtered_data(), num_observations)
   })
 }
 
