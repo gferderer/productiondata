@@ -15,6 +15,12 @@ starter_labels <- unique(brew_data8.18$Starter)
 # Calculate the maximum number of observations per starter
 max_observations <- max(table(brew_data8.18$Starter))
 
+# Create a vector of labels for each Starter category
+starter_groups <- unique(brew_data8.18$Starter.Group)
+
+# Calculate the number of starter groups
+max_startergroup <- max(table(brew_data8.18$Starter.Group))
+
 # Define the UI interface
 ui <- dashboardPage(
   dashboardHeader(title = "Starter Quality Dashboard"),
@@ -22,10 +28,16 @@ ui <- dashboardPage(
     # Add a dropdown input for selecting the minimum number of observations
     selectInput("min_observation", "Minimum Number of Observations", 
                 choices = 1:max_observations, selected = 1),
-    # TO TRY
-    # checkboxgroupinput
-    # should have more of the functionality we need
-    # Add a drop down input for selecting the starter identity
+    
+    # # Add a dropdown input for selecting the starter group
+    # selectInput("starter_group", "Starter Group", 
+    #             choices = starter_groups, selected = starter_groups[1]),
+    
+    # Add a checkboxgroupinput for selecting the starter group
+    checkboxGroupInput("starter_group", "Starter Group",
+                       choices = starter_groups, selected = starter_groups),
+    
+    # Add a checkboxgroupinput for selecting the starter identity
     checkboxGroupInput("starter_selection", "Select Starter Identity", 
                 choices = starter_labels, selected = starter_labels)
   ),
@@ -71,12 +83,33 @@ create_scaled_boxplot <- function(data) {
 
 
 
-# Define the server function
+# # Define the server function
+# server <- function(input, output) {
+#   # Create a reactive dataset that filters based on the minimum number of observations, starter group selected, and starter select
+#   filtered_data <- reactive({
+#     # Filter data based on minimum observations
+#     data <- subset(brew_data8.18, Starter %in% names(which(table(brew_data8.18$Starter) >= input$min_observation)))
+# 
+#     # Filter data based on starter group
+#     data <- subset(brew_data8.18, Starter.Group %in% names(which(table(brew_data8.18$Starter.Group) >= input$starter_group)))
+# 
+#     # Further filter data based on the selected starter identities
+#     if (!is.null(input$starter_selection) && length(input$starter_selection) > 0) {
+#       data <- data[data$Starter %in% input$starter_selection, ]
+#     }
+#     
+#     return(data)
+#   })
 server <- function(input, output) {
-  # Create a reactive dataset that filters based on the minimum number of observations
+  # Create a reactive dataset that filters based on the minimum number of observations, starter group selected, and starter select
   filtered_data <- reactive({
     # Filter data based on minimum observations
     data <- subset(brew_data8.18, Starter %in% names(which(table(brew_data8.18$Starter) >= input$min_observation)))
+    
+    # Filter data based on starter group (checkboxGroupInput allows multiple selections, so we use %in%)
+    if (!is.null(input$starter_group) && length(input$starter_group) > 0) {
+      data <- data[data$Starter.Group %in% input$starter_group, ]
+    }
     
     # Further filter data based on the selected starter identities
     if (!is.null(input$starter_selection) && length(input$starter_selection) > 0) {
