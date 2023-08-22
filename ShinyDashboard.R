@@ -21,12 +21,18 @@ ui <- dashboardPage(
   dashboardSidebar(
     # Add a dropdown input for selecting the minimum number of observations
     selectInput("min_observation", "Minimum Number of Observations", 
-                choices = 1:max_observations, selected = 1)
+                choices = 1:max_observations, selected = 1),
+    # TO TRY
+    # checkboxgroupinput
+    # should have more of the functionality we need
+    # Add a drop down input for selecting the starter identity
+    checkboxGroupInput("starter_selection", "Select Starter Identity", 
+                choices = starter_labels, selected = starter_labels)
   ),
   dashboardBody(
     fluidRow(
       # Define the width of the chart area (e.g., 8 out of 12 columns)
-      column(width = 8,
+      column(width = 12,
              box(
                plotlyOutput("combined_plot")
              )
@@ -35,66 +41,58 @@ ui <- dashboardPage(
   )
 )
 
-# Define a function to create the scaled boxplot with dynamic formatting
-create_scaled_boxplot <- function(data, num_observations) {
-  # Define default aesthetics and settings
-  aesthetics <- list(
-    y = scale(Taste.Rating.out.of.10),  # Default y-aesthetic
-    fill = "Taste Rating",  # Default fill color
-    color = "Taste Rating",  # Default point color
-    title = "Combined Scaled Boxplots of Taste Rating"
-  )
+# Define a function to create the scaled boxplot
+create_scaled_boxplot <- function(data) {
+  # Filter out rows with non-finite values
+  data <- data[!is.na(data$Taste.Rating.out.of.10) & !is.na(data$Starter.ABV), ]
   
-  # Adjust aesthetics and settings based on the number of observations
-  if (num_observations < 50) {
-    aesthetics$color <- "Taste Rating"
-    aesthetics$title <- "Combined Scaled Boxplots of Taste Rating (Small Sample)"
-  } else if (num_observations < 100) {
-    aesthetics$y <- scale(Taste.Rating.out.of.10, limits = c(-2, 2))
-    aesthetics$fill <- "Taste Rating"
-    aesthetics$color <- "Taste Rating"
-    aesthetics$title <- "Combined Scaled Boxplots of Taste Rating (Medium Sample)"
-  } else {
-    aesthetics$y <- scale(Taste.Rating.out.of.10, limits = c(-3, 3))
-    aesthetics$fill <- "Taste Rating"
-    aesthetics$color <- "Taste Rating"
-    aesthetics$title <- "Combined Scaled Boxplots of Taste Rating (Large Sample)"
-  }
-  
-  # Create the ggplot chart with dynamic formatting
   ggplot(data, aes(x = Starter)) +
-    geom_boxplot(aes(y = aesthetics$y, fill = aesthetics$fill), width = 0.5) +
-    geom_point(aes(y = aesthetics$y, color = aesthetics$color), position = position_jitterdodge(jitter.width = 0.01), size = 3) +
+    geom_boxplot(aes(y = scale(Taste.Rating.out.of.10), fill = "Taste Rating"), width = 0.5) +
+    geom_point(aes(y = scale(Taste.Rating.out.of.10), color = "Taste Rating"), position = position_jitterdodge(jitter.width = 0.01), size = 1) +
+    geom_boxplot(aes(y = scale(Starter.ABV), fill = "Starter ABV"), width = 0.5) +
+    geom_point(aes(y = scale(Starter.ABV), color = "Starter ABV"), position = position_jitterdodge(jitter.width = 0.01), size = 1) +
     labs(
       x = "Starter",
       y = "Rescaled Values",
-      title = aesthetics$title
+      title = "Combined Scaled Boxplots of Taste Rating and Starter ABV"
     ) +
     theme_minimal() +
     scale_fill_manual(
-      values = c("Taste Rating" = "lightskyblue", "Starter ABV" = "turquoise3"),
+      values = c("Taste Rating" = "lightskyblue", "Starter ABV" = "salmon1"),
       name = "Variables"  # Set the legend title
     ) +
     scale_color_manual(
-      values = c("Taste Rating" = "royalblue1", "Starter ABV" = "turquoise1"),
+      values = c("Taste Rating" = "royalblue1", "Starter ABV" = "salmon"),
       name = "Variables"  # Set the legend title
     ) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels
 }
 
+
+
+
 # Define the server function
 server <- function(input, output) {
   # Create a reactive dataset that filters based on the minimum number of observations
   filtered_data <- reactive({
-    subset(brew_data8.18, Starter %in% names(which(table(brew_data8.18$Starter) >= input$min_observation)))
+    # Filter data based on minimum observations
+    data <- subset(brew_data8.18, Starter %in% names(which(table(brew_data8.18$Starter) >= input$min_observation)))
+    
+    # Further filter data based on the selected starter identities
+    if (!is.null(input$starter_selection) && length(input$starter_selection) > 0) {
+      data <- data[data$Starter %in% input$starter_selection, ]
+    }
+    
+    return(data)
   })
   
   # Render the plot using ggplotly
   output$combined_plot <- renderPlotly({
-    num_observations <- nrow(filtered_data())
-    create_scaled_boxplot(filtered_data(), num_observations)
+    create_scaled_boxplot(filtered_data())
   })
 }
+
+
 
 # Run the Shiny Dashboard app
 shinyApp(ui, server)
