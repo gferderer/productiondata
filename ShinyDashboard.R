@@ -37,10 +37,19 @@ ui <- dashboardPage(
     checkboxGroupInput("starter_group", "Starter Group",
                        choices = starter_groups, selected = starter_groups),
     
+    #Action button to select all starters
+    actionButton("select_all_starters", "Select All Starters"),
+    
+    # Action button to unselect all starters
+    actionButton("unselect_all_starters", "Unselect All Starters"),
+    
     # Add a checkboxgroupinput for selecting the starter identity
     checkboxGroupInput("starter_selection", "Select Starter Identity", 
                 choices = starter_labels, selected = starter_labels)
-  ),
+ 
+    ),
+  
+  
   dashboardBody(
     fluidRow(
       # Define the width of the chart area (e.g., 8 out of 12 columns)
