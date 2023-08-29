@@ -50,14 +50,17 @@ ui <- dashboardPage(
   dashboardBody(
     fluidRow(
       # Define the width of the chart area (e.g., 8 out of 12 columns)
-      column(width = 12,
-             box(
-               plotlyOutput("combined_plot")
+      column(width = 12, box(
+        plotlyOutput("combined_plot")
              ),
-             column(width = 6,  # Add a new column for the scatter plot with trendlines
+      column(width = 6,  # Add a new column for the scatter plot with trendlines
                     box(
                       plotlyOutput("scatter_plot_with_trendlines")
                     ),
+       column(width = 6,
+                    box(
+                      plotlyOutput("starter_taste_trends")
+                    ))
       )
     )
   )
@@ -65,7 +68,7 @@ ui <- dashboardPage(
 # Define a function to create the scaled boxplot
 create_scaled_boxplot <- function(data) {
   # Filter out rows with non-finite values
-  data <- data[!is.na(data$Taste.Rating.out.of.10) & !is.na(data$Starter.ABV), ]
+  # data <- data[!is.na(data$Taste.Rating.out.of.10) & !is.na(data$Starter.ABV), ]
   
   ggplot(data, aes(x = Starter)) +
     geom_boxplot(aes(y = scale(Taste.Rating.out.of.10), fill = "Taste Rating"), width = 0.5) +
@@ -79,21 +82,21 @@ create_scaled_boxplot <- function(data) {
     ) +
     theme_minimal() +
     scale_fill_manual(
-      values = c("Taste Rating" = "lightskyblue", "Starter ABV" = "salmon1"),
+      values = c("Taste Rating" = "mediumturquoise", "Starter ABV" = "salmon1"),
       name = "Variables"  # Set the legend title
     ) +
     scale_color_manual(
-      values = c("Taste Rating" = "royalblue1", "Starter ABV" = "salmon"),
+      values = c("Taste Rating" = "turquoise4", "Starter ABV" = "salmon"),
       name = "Variables"  # Set the legend title
     ) +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels
 }
 
 # Add a legend with custom colors
-starter_abv_trends <- starter_abv_trends + scale_color_manual(values = rainbow(length(unique(filtered_data4$Starter)))) +
+starter_abv_trends <- starter_abv_trends + scale_color_manual(values = rainbow(length(unique(brew_data8.18$Starter)))) +
   guides(color = guide_legend(title = "Starter Label"))
 
-# Create the scatter plot with trendlines
+# Create the scatter plot for taste rating with trendlines
 starter_abv_trends <- ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Starter.ABV, color = Starter)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +  # Add linear regression lines
@@ -104,6 +107,20 @@ starter_abv_trends <- ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Star
   ) +
   theme_minimal()
 
+# Add a legend with custom colors
+starter_taste_trends <- starter_taste_trends + scale_color_manual(values = rainbow(length(unique(brew_data8.18$Starter)))) +
+  guides(color = guide_legend(title = "Starter Label"))
+
+# Create the scatter plot with trendlines
+starter_taste_trends <- ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Taste.Rating.out.of.10, color = Starter)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +  # Add linear regression lines
+  labs(
+    title = "Scatter Plot of Date Brewed vs. Taste Rating with Trendlines",
+    x = "Date Brewed",
+    y = "Taste Rating out of 10"
+  ) +
+  theme_minimal()
 
 server <- function(input, output, session) {
   # Create a reactive dataset that filters based on the minimum number of observations, starter group selected, and starter select
@@ -136,6 +153,19 @@ server <- function(input, output, session) {
       ) +
       theme_minimal()
   })
+  
+  # # Creates a reactive ggplot object that responds to changes in filtered data
+  # starter_taste_trends <- reactive({
+  #   ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Taste.Rating.out.of.10, color = Starter)) +
+  #   geom_point() +
+  #   geom_smooth(method = "lm", se = FALSE) +  # Add linear regression lines
+  #   labs(
+  #     title = "Scatter Plot of Date Brewed vs. Starter Taste Rating out of 10 with Trendlines",
+  #     x = "Date Brewed",
+  #     y = "Starter ABV"
+  #   ) +
+  #   theme_minimal()
+  # })
     
     #adds functionality to the select/unselect all starters
     observeEvent(input$select_all_starters, {
@@ -157,6 +187,11 @@ server <- function(input, output, session) {
   # Render the scatter plot with trendlines using ggplotly
   output$scatter_plot_with_trendlines <- renderPlotly({
     ggplotly(starter_abv_trends())
+  })
+  
+  # Render the starter_taste_trends scatter plot with trendlines using ggplotly
+  output$starter_taste_trends <- renderPlotly({
+    ggplotly(starter_taste_trends)
   })
 }
 
