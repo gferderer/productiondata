@@ -28,10 +28,7 @@ ui <- dashboardPage(
     # Add a dropdown input for selecting the minimum number of observations
     selectInput("min_observation", "Minimum Number of Observations", 
                 choices = 1:max_observations, selected = 1),
-    
-    # # Add a dropdown input for selecting the starter group
-    # selectInput("starter_group", "Starter Group", 
-    #             choices = starter_groups, selected = starter_groups[1]),
+  
     
     # Add a checkboxgroupinput for selecting the starter group
     checkboxGroupInput("starter_group", "Starter Group",
@@ -56,12 +53,15 @@ ui <- dashboardPage(
       column(width = 12,
              box(
                plotlyOutput("combined_plot")
-             )
+             ),
+             column(width = 6,  # Add a new column for the scatter plot with trendlines
+                    box(
+                      plotlyOutput("scatter_plot_with_trendlines")
+                    ),
       )
     )
   )
-)
-
+))
 # Define a function to create the scaled boxplot
 create_scaled_boxplot <- function(data) {
   # Filter out rows with non-finite values
@@ -89,27 +89,23 @@ create_scaled_boxplot <- function(data) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels
 }
 
+# Add a legend with custom colors
+starter_abv_trends <- starter_abv_trends + scale_color_manual(values = rainbow(length(unique(filtered_data4$Starter)))) +
+  guides(color = guide_legend(title = "Starter Label"))
+
+# Create the scatter plot with trendlines
+starter_abv_trends <- ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Starter.ABV, color = Starter)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +  # Add linear regression lines
+  labs(
+    title = "Scatter Plot of Date Brewed vs. Starter ABV with Trendlines",
+    x = "Date Brewed",
+    y = "Starter ABV"
+  ) +
+  theme_minimal()
 
 
-
-# # Define the server function
-# server <- function(input, output) {
-#   # Create a reactive dataset that filters based on the minimum number of observations, starter group selected, and starter select
-#   filtered_data <- reactive({
-#     # Filter data based on minimum observations
-#     data <- subset(brew_data8.18, Starter %in% names(which(table(brew_data8.18$Starter) >= input$min_observation)))
-# 
-#     # Filter data based on starter group
-#     data <- subset(brew_data8.18, Starter.Group %in% names(which(table(brew_data8.18$Starter.Group) >= input$starter_group)))
-# 
-#     # Further filter data based on the selected starter identities
-#     if (!is.null(input$starter_selection) && length(input$starter_selection) > 0) {
-#       data <- data[data$Starter %in% input$starter_selection, ]
-#     }
-#     
-#     return(data)
-#   })
-server <- function(input, output) {
+server <- function(input, output, session) {
   # Create a reactive dataset that filters based on the minimum number of observations, starter group selected, and starter select
   filtered_data <- reactive({
     # Filter data based on minimum observations
@@ -128,9 +124,39 @@ server <- function(input, output) {
     return(data)
   })
   
+  # Create a reactive ggplot object that responds to changes in filtered_data and input$starter_selection
+  starter_abv_trends <- reactive({
+    ggplot(data = filtered_data(), aes(x = Date.Brewed, y = Starter.ABV, color = Starter)) +
+      geom_point() +
+      geom_smooth(method = "lm", se = FALSE) +
+      labs(
+        title = "Scatter Plot of Date Brewed vs. Starter ABV with Trendlines",
+        x = "Date Brewed",
+        y = "Starter ABV"
+      ) +
+      theme_minimal()
+  })
+    
+    #adds functionality to the select/unselect all starters
+    observeEvent(input$select_all_starters, {
+      # Set all starter selections to selected
+      updateCheckboxGroupInput(session, "starter_selection", selected = starter_labels)
+    })
+    
+    observeEvent(input$unselect_all_starters, {
+      # Unselect all starter selections
+      updateCheckboxGroupInput(session, "starter_selection", selected = character(0))
+    })
+  
+  
   # Render the plot using ggplotly
   output$combined_plot <- renderPlotly({
     create_scaled_boxplot(filtered_data())
+  })
+  
+  # Render the scatter plot with trendlines using ggplotly
+  output$scatter_plot_with_trendlines <- renderPlotly({
+    ggplotly(starter_abv_trends())
   })
 }
 
