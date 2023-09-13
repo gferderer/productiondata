@@ -26,6 +26,8 @@ ui <- dashboardPage(
   dashboardHeader(title = "Starter Quality Dashboard"),
   dashboardSidebar(
     # Add a dropdown input for selecting the minimum number of observations
+    actionButton("update_plot_button", "Update Plot"),
+      
     selectInput("min_observation", "Minimum Number of Observations", 
                 choices = 1:max_observations, selected = 1),
   
@@ -46,25 +48,47 @@ ui <- dashboardPage(
  
     ),
   
-  
   dashboardBody(
     fluidRow(
-      # Define the width of the chart area (e.g., 8 out of 12 columns)
-      column(width = 12, box(
+      # Top row with combined_plot
+      box(
+        width = 12,
         plotlyOutput("combined_plot")
-             ),
-      column(width = 6,  # Add a new column for the scatter plot with trendlines
-                    box(
-                      plotlyOutput("scatter_plot_with_trendlines")
-                    ),
-       column(width = 6,
-                    box(
-                      plotlyOutput("starter_taste_trends")
-                    ))
+      ),
+      # Bottom row with two plots sharing equal space
+      column(
+        width = 6,
+        box(
+          plotlyOutput("scatter_plot_with_trendlines")
+        )
+      ),
+      column(
+        width = 6,
+        box(
+          plotlyOutput("starter_taste_trends")
+        )
       )
     )
   )
-))
+  
+  # dashboardBody(
+  #   fluidRow(
+  #     # Define the width of the chart area (e.g., 8 out of 12 columns)
+  #     column(width = 12, box(
+  #       plotlyOutput("combined_plot")
+  #            ),
+  #     column(width = 6,  # Add a new column for the scatter plot with trendlines
+  #                   box(
+  #                     plotlyOutput("scatter_plot_with_trendlines")
+  #                   ),
+  #      column(width = 6,
+  #                   box(
+  #                     plotlyOutput("starter_taste_trends")
+  #                   ))
+  #     )
+  #   )
+  # )
+)
 # Define a function to create the scaled boxplot
 create_scaled_boxplot <- function(data) {
   # Filter out rows with non-finite values
@@ -141,8 +165,21 @@ server <- function(input, output, session) {
     return(data)
   })
   
+  # Define a reactive expression to hold the button click count
+  button_click_count <- reactiveVal(0)
+  
+  # Create an observeEvent to update plots when the button is clicked
+  observeEvent(input$update_plot_button, {
+    # Increment the button click count to trigger reactive updates
+    button_click_count(button_click_count() + 1)
+  }) 
+  
   # Create a reactive ggplot object that responds to changes in filtered_data and input$starter_selection
   starter_abv_trends <- reactive({
+    
+    # Use the button_click_count to trigger updates only when the button is clicked
+    req(button_click_count())
+    
     ggplot(data = filtered_data(), aes(x = Date.Brewed, y = Starter.ABV, color = Starter)) +
       geom_point() +
       geom_smooth(method = "lm", se = FALSE) +
@@ -154,18 +191,22 @@ server <- function(input, output, session) {
       theme_minimal()
   })
   
-  # # Creates a reactive ggplot object that responds to changes in filtered data
-  # starter_taste_trends <- reactive({
-  #   ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Taste.Rating.out.of.10, color = Starter)) +
-  #   geom_point() +
-  #   geom_smooth(method = "lm", se = FALSE) +  # Add linear regression lines
-  #   labs(
-  #     title = "Scatter Plot of Date Brewed vs. Starter Taste Rating out of 10 with Trendlines",
-  #     x = "Date Brewed",
-  #     y = "Starter ABV"
-  #   ) +
-  #   theme_minimal()
-  # })
+  # Creates a reactive ggplot object that responds to changes in filtered data
+  starter_taste_trends <- reactive({
+    
+    # Use the button_click_count to trigger updates only when the button is clicked
+    req(button_click_count())
+    
+    ggplot(data = filtered_data(), aes(x = Date.Brewed, y = Taste.Rating.out.of.10, color = Starter)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +  # Add linear regression lines
+    labs(
+      title = "Scatter Plot of Date Brewed vs. Taste Rating with Trendlines",
+      x = "Date Brewed",
+      y = "Taste Rating out of 10"
+    ) +
+    theme_minimal()
+  })
     
     #adds functionality to the select/unselect all starters
     observeEvent(input$select_all_starters, {
@@ -191,11 +232,11 @@ server <- function(input, output, session) {
   
   # Render the starter_taste_trends scatter plot with trendlines using ggplotly
   output$starter_taste_trends <- renderPlotly({
-    ggplotly(starter_taste_trends)
+    ggplotly(starter_taste_trends())
   })
 }
 
 
-
+# Trying to add an "UPDATE" button so there is less lag. 
 # Run the Shiny Dashboard app
 shinyApp(ui, server)
