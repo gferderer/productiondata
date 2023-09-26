@@ -10,32 +10,39 @@ library(ggplot2)
 library(plotly)
 
 # Create a vector of labels for each Starter category
-starter_labels <- unique(brew_data8.18$Starter)
+starter_labels <- unique(brew_data9.21$Starter)
 
 # Calculate the maximum number of observations per starter
-max_observations <- max(table(brew_data8.18$Starter))
+max_observations <- max(table(brew_data9.21$Starter))
 
 # Create a vector of labels for each Starter category
-starter_groups <- unique(brew_data8.18$Starter.Group)
-
-# Calculate the number of starter groups
-max_startergroup <- max(table(brew_data8.18$Starter.Group))
+starter_groups <- unique(brew_data9.21$Starter.Group)
 
 # Define the UI interface
 ui <- dashboardPage(
   dashboardHeader(title = "Starter Quality Dashboard"),
   dashboardSidebar(
+    ## Number of Observations
     # Add a dropdown input for selecting the minimum number of observations
     actionButton("update_plot_button", "Update Plot"),
       
     selectInput("min_observation", "Minimum Number of Observations", 
                 choices = 1:max_observations, selected = 1),
   
+    ## Selecting Starter Group
+    
+    #Action button to select all starter groups
+    actionButton("select_all_groups", "Select All Starter Groups"),
+    
+    # Action button to unselect all starters
+    actionButton("unselect_all_groups", "Unselect All Starter Groups"),
     
     # Add a checkboxgroupinput for selecting the starter group
     checkboxGroupInput("starter_group", "Starter Group",
-                       choices = starter_groups, selected = starter_groups),
+                       choices = 1:length(starter_groups), selected = starter_groups),
+  
     
+    ## Select All Starters
     #Action button to select all starters
     actionButton("select_all_starters", "Select All Starters"),
     
@@ -54,41 +61,24 @@ ui <- dashboardPage(
       box(
         width = 12,
         plotlyOutput("combined_plot")
-      ),
-      # Bottom row with two plots sharing equal space
-      column(
-        width = 6,
-        box(
-          plotlyOutput("scatter_plot_with_trendlines")
-        )
-      ),
-      column(
-        width = 6,
-        box(
-          plotlyOutput("starter_taste_trends")
-        )
+      )
+      # # Bottom row with two plots sharing equal space
+      # column(
+      #   width = 6,
+      #   box(
+      #     plotlyOutput("scatter_plot_with_trendlines")
+      #   )
+      # ),
+      # column(
+      #   width = 6,
+      #   box(
+      #     plotlyOutput("starter_taste_trends")
+      #   )
+      # ) 
       )
     )
   )
   
-  # dashboardBody(
-  #   fluidRow(
-  #     # Define the width of the chart area (e.g., 8 out of 12 columns)
-  #     column(width = 12, box(
-  #       plotlyOutput("combined_plot")
-  #            ),
-  #     column(width = 6,  # Add a new column for the scatter plot with trendlines
-  #                   box(
-  #                     plotlyOutput("scatter_plot_with_trendlines")
-  #                   ),
-  #      column(width = 6,
-  #                   box(
-  #                     plotlyOutput("starter_taste_trends")
-  #                   ))
-  #     )
-  #   )
-  # )
-)
 # Define a function to create the scaled boxplot
 create_scaled_boxplot <- function(data) {
   # Filter out rows with non-finite values
@@ -117,11 +107,11 @@ create_scaled_boxplot <- function(data) {
 }
 
 # Add a legend with custom colors
-starter_abv_trends <- starter_abv_trends + scale_color_manual(values = rainbow(length(unique(brew_data8.18$Starter)))) +
+starter_abv_trends <- starter_abv_trends + scale_color_manual(values = rainbow(length(unique(brew_data9.21$Starter)))) +
   guides(color = guide_legend(title = "Starter Label"))
 
 # Create the scatter plot for taste rating with trendlines
-starter_abv_trends <- ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Starter.ABV, color = Starter)) +
+starter_abv_trends <- ggplot(data = brew_data9.21, aes(x = Date.Brewed, y = Starter.ABV, color = Starter)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +  # Add linear regression lines
   labs(
@@ -132,11 +122,11 @@ starter_abv_trends <- ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Star
   theme_minimal()
 
 # Add a legend with custom colors
-starter_taste_trends <- starter_taste_trends + scale_color_manual(values = rainbow(length(unique(brew_data8.18$Starter)))) +
+starter_taste_trends <- starter_taste_trends + scale_color_manual(values = rainbow(length(unique(brew_data9.21$Starter)))) +
   guides(color = guide_legend(title = "Starter Label"))
 
 # Create the scatter plot with trendlines
-starter_taste_trends <- ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Taste.Rating.out.of.10, color = Starter)) +
+starter_taste_trends <- ggplot(data = brew_data9.21, aes(x = Date.Brewed, y = Taste.Rating.out.of.10, color = Starter)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +  # Add linear regression lines
   labs(
@@ -146,11 +136,14 @@ starter_taste_trends <- ggplot(data = brew_data8.18, aes(x = Date.Brewed, y = Ta
   ) +
   theme_minimal()
 
+## Server 
+#
+
 server <- function(input, output, session) {
   # Create a reactive dataset that filters based on the minimum number of observations, starter group selected, and starter select
   filtered_data <- reactive({
     # Filter data based on minimum observations
-    data <- subset(brew_data8.18, Starter %in% names(which(table(brew_data8.18$Starter) >= input$min_observation)))
+    data <- subset(brew_data9.21, Starter %in% names(which(table(brew_data9.21$Starter) >= input$min_observation)))
     
     # Filter data based on starter group (checkboxGroupInput allows multiple selections, so we use %in%)
     if (!is.null(input$starter_group) && length(input$starter_group) > 0) {
@@ -208,7 +201,7 @@ server <- function(input, output, session) {
     theme_minimal()
   })
     
-    #adds functionality to the select/unselect all starters
+# Adds functionality to the select/unselect all starters
     observeEvent(input$select_all_starters, {
       # Set all starter selections to selected
       updateCheckboxGroupInput(session, "starter_selection", selected = starter_labels)
@@ -218,6 +211,19 @@ server <- function(input, output, session) {
       # Unselect all starter selections
       updateCheckboxGroupInput(session, "starter_selection", selected = character(0))
     })
+    
+# Adds functionality to the select/unselect all starters groups
+    
+    observeEvent(input$select_all_groups, {
+      # Set all starter selections to selected
+      updateCheckboxGroupInput(session, "starter_group", selected = starter_groups)
+    })
+    
+    observeEvent(input$unselect_all_groups, {
+      # Unselect all starter selections
+      updateCheckboxGroupInput(session, "starter_group", selected = character(0))
+    })
+    
   
   
   # Render the plot using ggplotly
@@ -225,16 +231,16 @@ server <- function(input, output, session) {
     create_scaled_boxplot(filtered_data())
   })
   
-  # Render the scatter plot with trendlines using ggplotly
-  output$scatter_plot_with_trendlines <- renderPlotly({
-    ggplotly(starter_abv_trends())
-  })
-  
-  # Render the starter_taste_trends scatter plot with trendlines using ggplotly
-  output$starter_taste_trends <- renderPlotly({
-    ggplotly(starter_taste_trends())
-  })
-}
+#   # Render the scatter plot with trendlines using ggplotly
+#   output$scatter_plot_with_trendlines <- renderPlotly({
+#     ggplotly(starter_abv_trends())
+#   })
+#   
+#   # Render the starter_taste_trends scatter plot with trendlines using ggplotly
+#   output$starter_taste_trends <- renderPlotly({
+#     ggplotly(starter_taste_trends())
+#   })
+ }
 
 
 # Trying to add an "UPDATE" button so there is less lag. 
