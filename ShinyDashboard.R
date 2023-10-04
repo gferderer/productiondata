@@ -1,16 +1,15 @@
 # Shiny Dashboard
-install.packages("shiny")
-install.packages("shinydashboard")
-install.packages("ggplot2")
-install.packages("plotly")
+# install.packages("shiny")
+# install.packages("shinydashboard")
+# install.packages("ggplot2")
+# install.packages("plotly")
 
-library(shiny)
-library(shinydashboard)
-library(ggplot2)
-library(plotly)
+# library(shiny)
+# library(shinydashboard)
+# library(ggplot2)
+# library(plotly)
 
-# Create a vector of labels for each Starter category
-starter_labels <- unique(brew_data9.21$Starter)
+# # Create a vector of labels for each Starter category
 
 # Calculate the maximum number of observations per starter
 max_observations <- max(table(brew_data9.21$Starter))
@@ -18,14 +17,24 @@ max_observations <- max(table(brew_data9.21$Starter))
 # Create a vector of labels for each Starter category
 starter_groups <- unique(brew_data9.21$Starter.Group)
 
+# Vector of labels for each unique Starter
+unique_starter <- unique(brew_data9.21$Starter)
+# sorts the unique_starter value numerically 
+unique_starter <- sort(unique_starter)
+
 # Define the UI interface
 ui <- dashboardPage(
   dashboardHeader(title = "Starter Quality Dashboard"),
   dashboardSidebar(
-    ## Number of Observations
-    # Add a dropdown input for selecting the minimum number of observations
+    
+## Update button UI
     actionButton("update_plot_button", "Update Plot"), # UPDATE BUTTON
-      
+    
+## Pause button UI
+    actionButton("pause_plot_button", "Pause Plot"), # Pause BUTTON
+    
+## Number of Observations  
+    # Add a dropdown input for selecting the minimum number of observations
     selectInput("min_observation", "Minimum Number of Observations", 
                 choices = 1:max_observations, selected = 1),
   
@@ -40,17 +49,20 @@ ui <- dashboardPage(
     checkboxGroupInput("starter_group", "Starter Group",
                        choices = 1:length(starter_groups), selected = starter_groups),
   
-    
 ## Select All Starters
     #Action button to select all starters
     actionButton("select_all_starters", "Select All Starters"),
     
     # Action button to unselect all starters
     actionButton("unselect_all_starters", "Unselect All Starters"),
+
+# Add a checkboxgroupinput for selecting the starter identity
+checkboxGroupInput("starter_selection", "Select Starter Identity",
+                   choices = unique_starter, selected = unique_starter)),
     
-    # Add a checkboxgroupinput for selecting the starter identity
-    checkboxGroupInput("starter_selection", "Select Starter Identity", 
-                choices = starter_labels, selected = starter_labels)),
+    # # Add a checkboxgroupinput for selecting the starter identity
+    # checkboxGroupInput("starter_selection", "Select Starter Identity",
+    #             choices = starter_labels, selected = starter_labels)),
   
   dashboardBody(
     fluidRow(
@@ -109,16 +121,7 @@ server <- function(input, output, session) {
     
     return(data)
   })
- 
-  ## UPTATE BUTTON 
-  # Define a reactive expression to hold the button click count
-  button_click_count <- reactiveVal(0)
-  
-  # Create an observeEvent to update plots when the button is clicked
-  observeEvent(input$update_plot_button, {
-    # Increment the button click count to trigger reactive updates
-    button_click_count(button_click_count() + 1)
-  }) 
+
     
 # Adds functionality to the select/unselect all starters
     observeEvent(input$select_all_starters, {
@@ -143,13 +146,44 @@ server <- function(input, output, session) {
       updateCheckboxGroupInput(session, "starter_group", selected = character(0))
     })
     
-  
-  # Render the plot using ggplotly
-  output$combined_plot <- renderPlotly({
-    create_scaled_boxplot(filtered_data())
-  })
- }
+## Update button    
+    button_click_count <- reactiveVal(0)  
+    pause_click_count <- reactiveVal(0)
+    
+# Reactive variable that controls whether the plot should be updated
+    plot_update_flag <- reactiveVal(FALSE)
+    
+# When "Update" button is clicked, button_click_count increments and sets "plot_update_flag" to true  
+    observeEvent(input$update_plot_button, {
+      # Increment the button click count
+      button_click_count(button_click_count() + 1)
+      
+      # Set the plot_update_flag to TRUE to allow updating the plot
+      plot_update_flag(TRUE)
+    })
+      
+     
+    observeEvent(input$pause_plot_button, {
+      # Increment the button click count
+      pause_click_count(pause_click_count() + 1)
 
-# Trying to add an "UPDATE" button so there is less lag. 
+      plot_update_flag(FALSE)
+    })
+    
+    output$combined_plot <- renderPlotly({
+      data_to_plot <- filtered_data()
+      
+      if (plot_update_flag()) {
+        if (!is.null(data_to_plot)) {
+          return(create_scaled_boxplot(data_to_plot))
+        } else {
+          return(NULL)
+        }
+      } else {
+        return(NULL)  # Return NULL to pause the plot rendering
+      }
+    })
+  }
+
 # Run the Shiny Dashboard app
 shinyApp(ui, server)
